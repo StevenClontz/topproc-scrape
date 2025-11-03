@@ -26,8 +26,10 @@ def extract_from_html(path: Path):
     # Find occurrences like:
     # "Karol Borsuk, On a new shape invariant, \nTop. Proc. 1 (1976) pp. 1-9."
     pattern = re.compile(
-        r'(?P<authors>[^<>\n]{2,}?)\s*,\s*(?P<title>[^<>\n]{5,}?)\s*,\s*Top\. Proc\.'
-        r'\s*(?P<volume>\d+)\s*\(\s*(?P<year>\d{4})\s*\)\s*pp\.\s*(?P<pages>[\d\-–]+)\.',
+        r'(?P<authors>[^<>\n]{2,}?)\s*,\s*(?P<title>[^<>\n]{5,}?)\s*,\s*Top\. Proc\.\s*'
+        r'(?P<volume>\d+)'
+        r'(?:\s*,?\s*no\.?\s*(?P<issue>\d+)\s*)?'
+        r'\s*\(\s*(?P<year>\d{4})\s*\)\s*pp\.\s*(?P<pages>[\d\-–]+)\.',
         re.IGNORECASE | re.DOTALL,
     )
 
@@ -41,6 +43,7 @@ def extract_from_html(path: Path):
         authors = parse_authors(m.group("authors"))
         title = m.group("title").strip().strip(',')
         volume = int(m.group("volume"))
+        issue = int(m.group("issue")) if m.group("issue") else 0
         year = int(m.group("year"))
         pages = m.group("pages").strip()
 
@@ -48,6 +51,7 @@ def extract_from_html(path: Path):
             "authors": authors,
             "title": title,
             "volume": volume,
+            "issue": issue,
             "year": year,
             "pages": pages,
             "id": item_id
@@ -65,19 +69,31 @@ def main():
         (f.parent / (f.stem + "_citations.json")).write_text(json.dumps(entries, indent=2), encoding="utf-8")
     # flatten
     out = [item for sublist in out.values() for item in sublist]
+    # remove duplicate ids
+    seen_ids = set()
+    unique_out = []
+    for item in out:
+        item_id = item.get("id")
+        if item_id and item_id in seen_ids:
+            continue
+        if item_id:
+            seen_ids.add(item_id)
+        unique_out.append(item)
+    out = unique_out
     # write combined file
     (DOWNLOADS / "all_citations.json").write_text(json.dumps(out, indent=2), encoding="utf-8")
     # write csv output
     csv_path = DOWNLOADS / "all_citations.csv"
     with csv_path.open("w", newline="", encoding="utf-8") as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow(["authors", "title", "volume", "year", "pages", "id"])
+        writer.writerow(["authors", "title", "volume", "issue", "year", "pages", "id"])
         for item in out:
             authors = ", ".join(item.get("authors", []))
             writer.writerow([
                 authors,
                 item.get("title", ""),
                 str(item.get("volume", "")),
+                str(item.get("issue", "")),
                 str(item.get("year", "")),
                 item.get("pages", ""),
                 item.get("id", ""),

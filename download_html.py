@@ -21,7 +21,7 @@ def download_html_files(output_dir="downloads"):
     # Create output directory if it doesn't exist
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     
-    base_url = "https://topology.nipissingu.ca/tp/reprints/v{}/r2.htm"
+    base_url = "http://topology.nipissingu.ca/tp/reprints/v{}/r2.htm"
     
     successful_downloads = 0
     failed_downloads = []

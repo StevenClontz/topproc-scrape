@@ -21,12 +21,16 @@ def parse_authors(raw):
 
 def extract_from_html(path: Path):
     text = unescape(path.read_text(encoding="utf-8", errors="ignore"))
+    # remove all text following <a name="authorindex">
+    text = re.split(r'<a\s+name=["\']authorindex["\']\s*>', text, flags=re.IGNORECASE)[0]
     entries = []
 
     # Find occurrences like:
     # "Karol Borsuk, On a new shape invariant, \nTop. Proc. 1 (1976) pp. 1-9."
+    # or
+    # "Karol Borsuk, On a new shape invariant, \nTop. Proc. 2, no 2 (1977) pp. 593-619."
     pattern = re.compile(
-        r'(?P<authors>[^<>\n]{2,}?)\s*,\s*(?P<title>[^<>\n]{5,}?)\s*,\s*Top\. Proc\.\s*'
+        r'(?P<authors>[^<>\n]{2,}?)\s*,\s*(?P<title>[^\n]{2,}?)\s*,\s*Top\. Proc\.\s*'
         r'(?P<volume>\d+)'
         r'(?:\s*,?\s*no\.?\s*(?P<issue>\d+)\s*)?'
         r'\s*\(\s*(?P<year>\d{4})\s*\)\s*pp\.\s*(?P<pages>[\d\-–]+)\.',
@@ -69,17 +73,6 @@ def main():
         (f.parent / (f.stem + "_citations.json")).write_text(json.dumps(entries, indent=2), encoding="utf-8")
     # flatten
     out = [item for sublist in out.values() for item in sublist]
-    # remove duplicate ids
-    seen_ids = set()
-    unique_out = []
-    for item in out:
-        item_id = item.get("id")
-        if item_id and item_id in seen_ids:
-            continue
-        if item_id:
-            seen_ids.add(item_id)
-        unique_out.append(item)
-    out = unique_out
     # write combined file
     (DOWNLOADS / "all_citations.json").write_text(json.dumps(out, indent=2), encoding="utf-8")
     # write csv output

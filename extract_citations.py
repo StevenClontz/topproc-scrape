@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import re
 import json
+import csv
 from pathlib import Path
 from html import unescape
 
@@ -66,7 +67,22 @@ def main():
     out = [item for sublist in out.values() for item in sublist]
     # write combined file
     (DOWNLOADS / "all_citations.json").write_text(json.dumps(out, indent=2), encoding="utf-8")
-    print("Wrote per-file *_citations.json and downloads/all_citations.json")
+    # write csv output
+    csv_path = DOWNLOADS / "all_citations.csv"
+    with csv_path.open("w", newline="", encoding="utf-8") as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(["authors", "title", "volume", "year", "pages", "id"])
+        for item in out:
+            authors = ", ".join(item.get("authors", []))
+            writer.writerow([
+                authors,
+                item.get("title", ""),
+                str(item.get("volume", "")),
+                str(item.get("year", "")),
+                item.get("pages", ""),
+                item.get("id", ""),
+            ])
+    print("Wrote per-file *_citations.json, downloads/all_citations.json, and downloads/all_citations.csv")
     print (f"Extracted total {len(out)} citations.")
 
 

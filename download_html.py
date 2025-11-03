@@ -16,7 +16,7 @@ def download_html_files(output_dir="downloads"):
     Download HTML files from topology.nipissingu.ca for volumes 01-67.
     
     Args:
-        output_dir: Directory where downloaded files will be saved
+        output_dir (str): Directory where downloaded files will be saved
     """
     # Create output directory if it doesn't exist
     Path(output_dir).mkdir(parents=True, exist_ok=True)
